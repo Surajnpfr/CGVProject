@@ -1,1 +1,0 @@
-"""Example mathematical surface configurations."""
