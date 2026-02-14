@@ -115,9 +115,17 @@ def create_surface_figure(
 
     fig = go.Figure(data=[surface], layout=layout)
 
+    # Default 3D camera (Plotly best practice: up, center, eye)
+    camera = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=1.25, y=1.25, z=1.25),
+    )
     fig.update_layout(
-        scene_camera=dict(
-            eye=dict(x=1.5, y=1.5, z=1.2),
+        scene_camera=camera,
+        scene=dict(
+            aspectmode="data",
+            aspectratio=dict(x=1, y=1, z=0.7),
         ),
     )
 

@@ -5,6 +5,9 @@ Main Streamlit application — clean glassmorphism UI.
 Run: streamlit run main.py
 """
 
+import base64
+import pathlib
+
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
@@ -39,6 +42,17 @@ st.set_page_config(
 # ──────────────────────────────────────────────────────────────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False  # Light mode default — academic / calm
+
+
+@st.cache_data(show_spinner="Generating grid...")
+def _cached_grid(x_range_tuple: tuple, y_range_tuple: tuple, resolution: int):
+    """Cache grid generation (Context7 / Streamlit best practice)."""
+    return generate_grid(
+        x_range=x_range_tuple,
+        y_range=y_range_tuple,
+        resolution=resolution,
+    )
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clean Glassmorphism CSS
@@ -322,7 +336,6 @@ inject_css(dark=st.session_state.dark_mode)
 # ──────────────────────────────────────────────────────────────────────────────
 # Header
 # ──────────────────────────────────────────────────────────────────────────────
-import base64, pathlib
 _icon_path = pathlib.Path(__file__).parent / "icon.png"
 _icon_b64 = base64.b64encode(_icon_path.read_bytes()).decode() if _icon_path.exists() else ""
 
@@ -487,7 +500,7 @@ with st.sidebar:
 # Computation
 # ──────────────────────────────────────────────────────────────────────────────
 
-X, Y = generate_grid(x_range=x_range, y_range=y_range, resolution=resolution)
+X, Y = _cached_grid(tuple(x_range), tuple(y_range), resolution)
 
 if rotation_angle != 0:
     X, Y = rotate_surface_z(X, Y, angle_deg=rotation_angle)

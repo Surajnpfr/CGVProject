@@ -224,6 +224,8 @@ def evaluate_custom_expression(
     expr = expr.strip()
     if not expr:
         raise ValueError("Expression is empty — type something like  sin(x)*cos(y)")
+    if len(expr) > 500:
+        raise ValueError("Expression too long — keep it under 500 characters.")
 
     # ── User-friendly preprocessing ──
     import re
