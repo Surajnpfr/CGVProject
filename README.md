@@ -278,7 +278,7 @@ The app will be available at **http://localhost:8501**.
 ### Heroku (via GitHub)
 
 1. Create a new app on [dashboard.heroku.com](https://dashboard.heroku.com)
-2. Connect to the GitHub repo (`Surajnpfr/CGVProject`)
+2. Connect to the GitHub repo
 3. Deploy branch `main`
 4. The `Procfile` and `runtime.txt` handle the rest automatically
 
