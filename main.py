@@ -87,15 +87,18 @@ def inject_css(dark: bool = False):
         background: {bg_gradient};
         background-attachment: fixed;
         font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-        color: {text_color};
+        color: {text_color} !important;
     }}
 
-    /* Force all Streamlit text to inherit our color */
+    /* Blanket text color — every possible Streamlit text element */
     .stApp p,
     .stApp span,
     .stApp label,
-    .stApp div {{
-        color: {text_color};
+    .stApp div,
+    .stApp li,
+    .stApp small,
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {{
+        color: {text_color} !important;
     }}
 
     /* ─── Hide Streamlit chrome ─── */
@@ -112,22 +115,18 @@ def inject_css(dark: bool = False):
         -webkit-backdrop-filter: blur(12px) !important;
         border-right: 1px solid {glass_border};
     }}
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div,
-    section[data-testid="stSidebar"] .stMarkdown,
-    section[data-testid="stSidebar"] .stSelectbox label,
-    section[data-testid="stSidebar"] .stCheckbox label span,
-    section[data-testid="stSidebar"] .stSlider label,
-    section[data-testid="stSidebar"] .stSlider [data-testid="stTickBarMin"],
-    section[data-testid="stSidebar"] .stSlider [data-testid="stTickBarMax"],
-    section[data-testid="stSidebar"] .stNumberInput label {{
+    section[data-testid="stSidebar"] * {{
         color: {text_color} !important;
     }}
     section[data-testid="stSidebar"] hr {{
         border-color: {divider} !important;
         margin: 0.8rem 0 !important;
+    }}
+    /* Sidebar buttons keep white text */
+    section[data-testid="stSidebar"] .stButton > button,
+    section[data-testid="stSidebar"] .stButton > button span,
+    section[data-testid="stSidebar"] .stButton > button p {{
+        color: #ffffff !important;
     }}
 
     /* ─── Glass Card (primary panel) ─── */
@@ -186,6 +185,9 @@ def inject_css(dark: bool = False):
     .info-card strong {{
         color: {accent} !important;
     }}
+    .info-card br + * {{
+        color: {text_color} !important;
+    }}
 
     /* ─── Buttons — flat, neutral ─── */
     .stButton > button {{
@@ -200,6 +202,9 @@ def inject_css(dark: bool = False):
         transition: background 0.2s ease !important;
         box-shadow: none !important;
     }}
+    .stButton > button * {{
+        color: #ffffff !important;
+    }}
     .stButton > button:hover {{
         background: {btn_hover} !important;
     }}
@@ -209,15 +214,18 @@ def inject_css(dark: bool = False):
         background: {accent} !important;
     }}
     .stSlider [data-testid="stThumbValue"],
-    .stSlider [data-baseweb="slider"] div {{
+    .stSlider [data-baseweb="slider"] div,
+    .stSlider span,
+    .stSlider p {{
         color: {text_color} !important;
     }}
 
-    /* ─── Selects / Inputs ─── */
+    /* ─── Selects / Inputs / Text inputs ─── */
     .stSelectbox label,
     .stSlider label,
     .stNumberInput label,
-    .stCheckbox label {{
+    .stCheckbox label,
+    .stTextInput label {{
         color: {text_color} !important;
     }}
     .stSelectbox [data-baseweb="select"] {{
@@ -225,24 +233,40 @@ def inject_css(dark: bool = False):
         border: 1px solid {input_border} !important;
         border-radius: 10px !important;
     }}
-    .stSelectbox [data-baseweb="select"] span,
-    .stSelectbox [data-baseweb="select"] div {{
+    .stSelectbox [data-baseweb="select"] *,
+    .stSelectbox svg {{
         color: {text_color} !important;
+        fill: {text_color} !important;
     }}
+    .stTextInput input,
     .stNumberInput input {{
         color: {text_color} !important;
         background: {input_bg} !important;
         border: 1px solid {input_border} !important;
         border-radius: 8px !important;
     }}
-    .stCheckbox span {{
+    .stTextInput input::placeholder {{
+        color: {text_muted} !important;
+        opacity: 0.7 !important;
+    }}
+    .stCheckbox span,
+    .stCheckbox label span {{
         color: {text_color} !important;
     }}
 
-    /* ─── Main content area markdown ─── */
+    /* ─── Markdown (main area) ─── */
     .stMarkdown p,
     .stMarkdown strong,
-    .stMarkdown code {{
+    .stMarkdown em,
+    .stMarkdown code,
+    .stMarkdown li {{
+        color: {text_color} !important;
+    }}
+
+    /* ─── Alert / Info / Error banners ─── */
+    .stAlert p,
+    .stAlert span,
+    .stAlert div {{
         color: {text_color} !important;
     }}
 
