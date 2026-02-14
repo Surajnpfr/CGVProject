@@ -12,10 +12,13 @@ import plotly.graph_objects as go
 from core.grid_generator import generate_grid, GRID_PRESETS
 from core.function_engine import (
     FUNCTION_REGISTRY,
+    CUSTOM_EQUATION_KEY,
+    EXAMPLE_EXPRESSIONS,
     get_function_names,
     compute_surface,
     get_default_param,
     get_description,
+    evaluate_custom_expression,
 )
 from core.transformations import scale_surface, translate_surface, rotate_surface_z
 from rendering.plotly_renderer import create_surface_figure, create_animation_frames, COLORMAPS
@@ -328,10 +331,48 @@ with st.sidebar:
     )
 
     desc = get_description(selected_func)
-    st.markdown(
-        f'<div class="info-card"><strong>Description:</strong> {desc}</div>',
-        unsafe_allow_html=True,
-    )
+    is_custom = selected_func == CUSTOM_EQUATION_KEY
+
+    # Custom equation input
+    if is_custom:
+        # Initialize session state for the expression
+        if "custom_expr" not in st.session_state:
+            st.session_state.custom_expr = "sin(x) * cos(y)"
+
+        custom_expr = st.text_input(
+            "z = ",
+            value=st.session_state.custom_expr,
+            placeholder="e.g.  x^2 + y^2",
+        )
+        st.session_state.custom_expr = custom_expr
+
+        # Quick-pick examples
+        st.markdown('<div class="sidebar-label">Try an example</div>', unsafe_allow_html=True)
+        example_cols = st.columns(2)
+        for i, example in enumerate(EXAMPLE_EXPRESSIONS):
+            col = example_cols[i % 2]
+            with col:
+                if st.button(example, key=f"ex_{i}", width="stretch"):
+                    st.session_state.custom_expr = example
+                    st.rerun()
+
+        # Syntax help
+        st.markdown(
+            '<div class="info-card">'
+            "<strong>Syntax tips</strong><br>"
+            "Use <strong>^</strong> for power: x^2 + y^2<br>"
+            "Implicit multiply works: 2x, 3y, 2pi<br>"
+            "Functions: sin, cos, tan, exp, log, sqrt, abs<br>"
+            "Constants: pi, e &nbsp;|&nbsp; Variables: x, y, a"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        custom_expr = ""
+        st.markdown(
+            f'<div class="info-card"><strong>Description:</strong> {desc}</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
 
@@ -415,7 +456,16 @@ X, Y = generate_grid(x_range=x_range, y_range=y_range, resolution=resolution)
 if rotation_angle != 0:
     X, Y = rotate_surface_z(X, Y, angle_deg=rotation_angle)
 
-Z = compute_surface(selected_func, X, Y, a=param_a)
+custom_error = None
+if is_custom:
+    try:
+        Z = evaluate_custom_expression(custom_expr, X, Y, a=param_a)
+    except ValueError as exc:
+        custom_error = str(exc)
+        Z = np.zeros_like(X)  # fallback so the page doesn't crash
+else:
+    Z = compute_surface(selected_func, X, Y, a=param_a)
+
 Z = scale_surface(Z, factor=scale_factor)
 Z = translate_surface(Z, offset=z_offset)
 
@@ -423,7 +473,12 @@ Z = translate_surface(Z, offset=z_offset)
 # Visualization
 # ──────────────────────────────────────────────────────────────────────────────
 
-if animate:
+# Show error banner if custom expression failed
+if custom_error:
+    st.error(f"**Expression error:** {custom_error}")
+
+if animate and not is_custom:
+    # Animation mode (only for preset functions — custom has no callable)
     a_values = generate_parameter_sweep(
         start=anim_start,
         end=anim_end,
@@ -443,8 +498,11 @@ if animate:
     st.plotly_chart(fig, width="stretch", key="anim_plot")
     st.markdown('</div>', unsafe_allow_html=True)
 else:
-    func_entry = selected_func.split("  ")[1] if "  " in selected_func else selected_func
-    title = f"{func_entry}  |  a = {param_a}"
+    if is_custom:
+        title = f"z = {custom_expr}  |  a = {param_a}" if custom_expr else "Custom Equation"
+    else:
+        func_entry = selected_func.split("  ")[1] if "  " in selected_func else selected_func
+        title = f"{func_entry}  |  a = {param_a}"
     fig = create_surface_figure(
         X, Y, Z,
         colormap=colormap,
@@ -453,6 +511,8 @@ else:
         show_contour=show_contour,
     )
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    if is_custom and animate:
+        st.info("Animation is available for preset functions only. The static surface is shown instead.")
     st.plotly_chart(fig, width="stretch", key="main_plot")
     st.markdown('</div>', unsafe_allow_html=True)
 

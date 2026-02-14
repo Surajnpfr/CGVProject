@@ -101,7 +101,15 @@ FUNCTION_REGISTRY: Dict[str, Dict[str, Any]] = {
         "description": "A saddle surface with three downward slopes.",
         "default_a": 0.1,
     },
+    "Custom Equation": {
+        "func": None,  # sentinel — handled by evaluate_custom_expression()
+        "description": "Type your own equation using x, y, and parameter a.",
+        "default_a": 1.0,
+    },
 }
+
+# Name constant so the UI can check against it
+CUSTOM_EQUATION_KEY = "Custom Equation"
 
 
 def get_function_names() -> List[str]:
@@ -143,3 +151,135 @@ def get_default_param(name: str) -> float:
 def get_description(name: str) -> str:
     """Return the description string for a given function."""
     return FUNCTION_REGISTRY[name]["description"]
+
+
+# ---------------------------------------------------------------------------
+# Custom expression evaluator
+# ---------------------------------------------------------------------------
+
+# Safe namespace — only NumPy math, no builtins
+_SAFE_NAMESPACE = {
+    "__builtins__": {},
+    # Trig
+    "sin": np.sin,
+    "cos": np.cos,
+    "tan": np.tan,
+    "arcsin": np.arcsin,
+    "arccos": np.arccos,
+    "arctan": np.arctan,
+    "sinh": np.sinh,
+    "cosh": np.cosh,
+    "tanh": np.tanh,
+    # Powers & roots
+    "exp": np.exp,
+    "log": np.log,
+    "log2": np.log2,
+    "log10": np.log10,
+    "sqrt": np.sqrt,
+    "abs": np.abs,
+    "power": np.power,
+    # Constants
+    "pi": np.pi,
+    "e": np.e,
+    # Misc
+    "floor": np.floor,
+    "ceil": np.ceil,
+    "sign": np.sign,
+    "maximum": np.maximum,
+    "minimum": np.minimum,
+}
+
+
+def evaluate_custom_expression(
+    expr: str,
+    X: np.ndarray,
+    Y: np.ndarray,
+    a: float = 1.0,
+) -> np.ndarray:
+    """
+    Safely evaluate a user-supplied math expression.
+
+    The expression can use variables ``x``, ``y``, ``a`` and any function
+    listed in ``_SAFE_NAMESPACE`` (sin, cos, exp, sqrt, …).
+
+    Parameters
+    ----------
+    expr : str
+        Mathematical expression, e.g. ``"sin(x) * cos(y) + a"``.
+    X, Y : np.ndarray
+        Mesh grid arrays.
+    a : float
+        User-controlled parameter.
+
+    Returns
+    -------
+    Z : np.ndarray
+
+    Raises
+    ------
+    ValueError
+        If the expression is empty, contains syntax errors, or uses
+        unsupported names.
+    """
+    expr = expr.strip()
+    if not expr:
+        raise ValueError("Expression is empty — type something like  sin(x)*cos(y)")
+
+    # ── User-friendly preprocessing ──
+    import re
+
+    expr = expr.replace("^", "**")           # caret → power
+
+    # Implicit multiplication: 2x → 2*x, 3y → 3*y, 2pi → 2*pi, 2sin → 2*sin
+    expr = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr)
+
+    # Implicit multiplication: )x → )*x, )( → )*(, )2 → )*2
+    expr = re.sub(r'\)([a-zA-Z0-9(])', r')*\1', expr)
+
+    # Implicit multiplication: x( → x*(  (but not func( which already has *)
+    # Only apply when the letter before ( is x, y, or a (single-char vars)
+    expr = re.sub(r'([xya])\(', r'\1*(', expr)
+
+    namespace = {**_SAFE_NAMESPACE, "x": X, "y": Y, "a": a}
+
+    try:
+        Z = eval(expr, namespace)  # noqa: S307
+    except SyntaxError:
+        raise ValueError(
+            "Syntax error — check for missing operators or unmatched parentheses. "
+            "Example: x^2 + y^2"
+        )
+    except NameError as exc:
+        # Extract the unknown name from the error
+        unknown = str(exc).split("'")[1] if "'" in str(exc) else str(exc)
+        raise ValueError(
+            f'Unknown name "{unknown}". '
+            "Allowed variables: x, y, a. "
+            "Functions: sin, cos, tan, exp, log, sqrt, abs, pi, e."
+        ) from exc
+    except ZeroDivisionError:
+        raise ValueError(
+            "Division by zero encountered. "
+            "Try adding a small offset, e.g. 1/(x^2 + y^2 + 0.01)"
+        )
+    except Exception as exc:
+        raise ValueError(f"Could not evaluate: {exc}") from exc
+
+    # If the result is a scalar (e.g. user typed "5"), broadcast to grid shape
+    Z = np.broadcast_to(np.asarray(Z, dtype=float), X.shape).copy()
+    return Z
+
+
+# Quick-pick example expressions for the UI
+EXAMPLE_EXPRESSIONS = [
+    "sin(x) * cos(y)",
+    "x^2 + y^2",
+    "x^2 - y^2",
+    "exp(-(x^2 + y^2))",
+    "sin(sqrt(x^2 + y^2))",
+    "a * sin(x) * sin(y)",
+    "cos(x) + cos(y)",
+    "x^3 - 3x*y^2",
+    "sin(a*x) * cos(a*y)",
+    "log(x^2 + y^2 + 1)",
+]
