@@ -29,7 +29,7 @@ from animations.parameter_animation import generate_parameter_sweep
 # ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="3D Math Visualizer",
-    page_icon="📐",
+    page_icon="icon.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -322,9 +322,14 @@ inject_css(dark=st.session_state.dark_mode)
 # ──────────────────────────────────────────────────────────────────────────────
 # Header
 # ──────────────────────────────────────────────────────────────────────────────
+import base64, pathlib
+_icon_path = pathlib.Path(__file__).parent / "icon.png"
+_icon_b64 = base64.b64encode(_icon_path.read_bytes()).decode() if _icon_path.exists() else ""
+
 st.markdown(
-    """
+    f"""
     <div class="header-card">
+        {'<img src="data:image/png;base64,' + _icon_b64 + '" style="width:52px;height:52px;margin-bottom:0.5rem;border-radius:12px;" />' if _icon_b64 else ''}
         <h1>Interactive 3D Math Visualizer</h1>
         <p>Explore mathematical surfaces with real-time parameter control and animation</p>
     </div>
@@ -336,6 +341,13 @@ st.markdown(
 # Sidebar Controls
 # ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
+    if _icon_b64:
+        st.markdown(
+            f'<div style="text-align:center;margin-bottom:0.6rem;">'
+            f'<img src="data:image/png;base64,{_icon_b64}" style="width:40px;height:40px;border-radius:10px;" />'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
     st.markdown('<div class="sidebar-label">Theme</div>', unsafe_allow_html=True)
     theme_label = "Switch to Light Mode" if st.session_state.dark_mode else "Switch to Dark Mode"
     if st.button(theme_label, width="stretch"):
