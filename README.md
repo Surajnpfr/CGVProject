@@ -251,7 +251,7 @@ User types "x^2 + 2y"
 | **Visualization** | Plotly | Interactive 3D surface rendering |
 | **Web Framework** | Streamlit | Reactive UI, sidebar controls, layout |
 | **Styling** | Custom CSS | Glassmorphism theme (light + dark) |
-| **Hosting** | Heroku / Streamlit Cloud | Deployment via GitHub |
+| **Hosting** | Railway / Streamlit Cloud | Deployment via GitHub |
 
 ---
 
@@ -275,12 +275,20 @@ The app will be available at **http://localhost:8501**.
 
 ## Deployment
 
-### Heroku (via GitHub)
+### Railway (Production)
 
-1. Create a new app on [dashboard.heroku.com](https://dashboard.heroku.com)
-2. Connect to the GitHub repo
-3. Deploy branch `main`
-4. The `Procfile` and `runtime.txt` handle the rest automatically
+The production deployment is hosted on **Railway** and is available at:
+
+> **https://cgv.surajnepal.dev**
+
+High-level workflow:
+
+1. Connect the Railway project to this GitHub repo.
+2. Configure a **Python** service that runs the command from `Procfile`:
+   - `web: streamlit run main.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true`
+3. Set the root directory to the project folder (where `main.py` and `requirements.txt` live).
+4. Enable automatic deploys from the `main` branch.
+5. Railway builds the image using `requirements.txt` and starts the Streamlit server.
 
 ### Streamlit Community Cloud (Free)
 
